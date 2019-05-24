@@ -67,6 +67,11 @@ AntColonyBase::calcTSP()
 int
 AntColonyBase::recalcTSP()
 {
+  // Save path to the member _path, start at 0;
+  // Return value:
+  // 0 Calculate success
+  // -1 Fail, max iterations reach.
+
   // Note: change member _caculated to true at last
   // TODO
 }
