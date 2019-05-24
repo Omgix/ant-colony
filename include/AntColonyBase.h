@@ -1,26 +1,33 @@
-#ifndef ANT_COLONY_ANTCOLONYCLASS_H
-#define ANT_COLONY_ANTCOLONYCLASS_H
+#ifndef ANT_COLONY_ANTCOLONYBASE_H
+#define ANT_COLONY_ANTCOLONYBASE_H
 
 #include <Eigen/Eigen>
 
 #include <fstream>
 #include <string>
-#include <vector>
+#include <deque>
 
-class AntColony
+// NOTE: Only accept EDGE_WEIGHT_TYPE of EUC_2D
+
+class AntColonyBase
 {
  public:
-  explicit AntColony(const char *filename);
-  explicit AntColony(const std::string &filename);
-  ~AntColony();
+  explicit AntColonyBase(const char *filename);
+  explicit AntColonyBase(const std::string &filename);
+  AntColonyBase(const AntColonyBase&) = delete;
+  AntColonyBase &operator=(const AntColonyBase&) = delete;
   int calcTSP();
   int recalcTSP();
-  std::vector<int> &get_path();
+  std::deque<int> &get_path();
  private:
-  int _n_nodes;
+  struct Point {
+    double x;
+    double y;
+  };
+  int _dim;
   Eigen::MatrixXd _adj_matrix;
   bool _caculated;
-  std::vector<int> _path;
+  std::deque<int> _path;
 };
 
-#endif //ANT_COLONY_ANTCOLONYCLASS_H
+#endif //ANT_COLONY_ANTCOLONYBASE_H
