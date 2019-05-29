@@ -11,6 +11,7 @@ AntColonyBase::AntColonyBase(const char *filename) {
   std::deque<Point> points;
   _caculated = false;
 
+  // Read file to get dimension and points coord.
   for (std::string line; getline(input, line);) {
     if (node_coord_sec) {
 
@@ -47,10 +48,10 @@ AntColonyBase::AntColonyBase(const char *filename) {
 
   _adj_matrix = Eigen::MatrixXd(_dim, _dim);
   for (int i = 0; i < _dim; ++i)
-    for (int j = 0; j < _dim; ++i) {
+    for (int j = 0; j <= i; ++j) {
       double d_x = points[i].x - points[j].x;
       double d_y = points[i].y - points[j].y;
-      _adj_matrix(i,j) = sqrt(d_x*d_x + d_y*d_y);
+      _adj_matrix(j,i) = _adj_matrix(i,j) = sqrt(d_x*d_x + d_y*d_y);
     }
 
 }
