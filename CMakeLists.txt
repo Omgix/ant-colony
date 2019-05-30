@@ -22,8 +22,7 @@ FIND_PACKAGE(PythonInterp 3)
 FIND_PACKAGE(PythonLibs   3)
 
 
-
-pybind11_add_module(antcolony binding.cpp AntColonyBase.cpp)
+pybind11_add_module(antcolony SHARED binding.cpp AntColonyBase.cpp)
 target_link_libraries(antcolony PRIVATE Eigen3::Eigen)
 
 # The library must not have any prefix and should be located in
@@ -32,7 +31,7 @@ target_link_libraries(antcolony PRIVATE Eigen3::Eigen)
 SET_TARGET_PROPERTIES( antcolony
         PROPERTIES
         PREFIX ""
-        LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/antcolony"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/antcolony"
         SUFFIX ".so"
         )
 
@@ -40,7 +39,7 @@ SET_TARGET_PROPERTIES( antcolony
 # the suffix ensures that the module can be found by the interpreter
 # later on.
 IF( APPLE )
-    SET_TARGET_PROPERTIES( example
+    SET_TARGET_PROPERTIES( antcolony
             PROPERTIES
             LINK_FLAGS "-undefined dynamic_lookup"
             SUFFIX     ".so"
