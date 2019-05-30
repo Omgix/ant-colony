@@ -20,6 +20,7 @@ class AntColonyBase
   int recalcTSP();
   std::deque<int> &get_path();
   void printAdj(std::ostream &os);
+  double total_len();
  private:
   enum NODE_COORD_TYPE {
     NONE,

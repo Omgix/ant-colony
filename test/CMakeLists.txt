@@ -1,4 +1,4 @@
-add_executable(test_ant test.cpp )
+add_executable(test_ant test.cpp)
 target_link_libraries(test_ant AntColonyBase)
 
 add_test(test_ulysses16 test_ant ${PROJECT_SOURCE_DIR}/data/ulysses16.tsp)

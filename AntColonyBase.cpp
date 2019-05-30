@@ -1,9 +1,12 @@
 #include "AntColonyBase.h"
 
 #include <cmath>
+#include <chrono>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <string>
+#include <iostream>
 
 AntColonyBase::AntColonyBase(const char *filename) {
   std::ifstream input (filename);
@@ -91,89 +94,91 @@ AntColonyBase::recalcTSP()
   // Note: change member _caculated to true at last
   const int MMax = 9999;              //max number of ants
   const int NMax = 500;               //max citys
-  int m = _dim;                       //number of ants
-  const double Q = 999 ;              //flexible
-  const int K = 1000;                 //ITER
-  Eigen::MatrixXd Phe(_dim, _dim);    // Pheromone
-  double LK;                          //total length
-  Eigen::MatrixXi Path(m, _dim);   //Record the path of the ant to prevent duplicate paths. Recorded is the point
+  int m = 1 * _dim;                       //number of ants
+  const double Q = 999;              //flexible
+  const int K = 9000;                 //ITER
+  Eigen::MatrixXd Phe = Eigen::MatrixXd::Constant(_dim, _dim, 1);    // Pheromone
   int ant;                            //Ant's current location
   int i,j,k,p;                        //loop variables
-  double _adj_matrixis = 0.1;         //Rate at which each pheromone disappears
-  int sameNum,samePhe[NMax];          //Every time I go to find the side with the most pheromone, as in the initial situation,
-                                      // when the amount of pheromone is the same,
-  int bugNum,bugTry[NMax];            //Selection made in the event of an error
-  double bugP = 0.90;                 //Selection made in the event of an error
-  int start = 0;                      //Starting point, the city number is from 0 - n-1.
-  double Max;                         //Used to select the most pheromone side
+  double alpha = 15;                 // Regulate the influence of the intensity of pheromone
+  double beta = 20;                   // Regulate the influence of visibility of city
+  double rho = 1;                     //Rate at which each pheromone disappears
   bool Passed[NMax];                  //Used to determine if the city has passed, can it be selected
+  Eigen::VectorXd tour (K);
 
-  for(i = 0;i < _dim;i++)
-    for(j = 0; j < _dim;j++)
-      Phe(i,j) = 1; //Initialize the pheromone concentration on each side
-  for(i = 0;i< m;i++)
-    Path(i,0) = start;  //The starting point of each ant is fixed
+  long seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator (seed);
+  std::uniform_int_distribution<int> start_die (0, _dim - 1);
+  double min_L = 1e32;
+  Eigen::VectorXi min_path (_dim);
+
   for(k = 0;k < K;k++){
-    for(i = 0;i < _dim;i++)
-      for(j = 0; j < _dim;j++)
-        Phe(i,j) *= _adj_matrixis ;//After each cycle, the pheromone disappears
-    srand((unsigned)time(nullptr));
-    for(i = 0;i < m;i++){//For each ant, perform a loop
+
+    Eigen::MatrixXd deltaPhe = Eigen::MatrixXd::Zero(_dim, _dim);
+
+    //For each ant, perform a loop
+    for(i = 0;i < m;i++){
+
+      Eigen::MatrixXd deltaPheSingle = Eigen::MatrixXd::Zero(_dim, _dim);
+      double LK = 0;
+      Eigen::VectorXi path (_dim);
+      int start = start_die(generator);
       ant = start;
+      path(0) = start;
       for(j = 0;j < _dim;j++)
         Passed[j] = false;
-      Passed[ant] = true;
-      for(j = 1;j < _dim;j++){//Each ant chooses n-1 times
-        Max = 0;
-        sameNum  = 0 ;
-        bugNum = 0;
-        for(p = 0;p < _dim;p++)
-          if(!Passed[p])
-            Max = Max > Phe(ant,p) ? Max : Phe(ant,p) ;//Find the maximum value of the pheromone around the edge
-        for(p = 0;p < _dim;p++)
-          if(Max == Phe(ant,p))
-            if(!Passed[p])
-              samePhe[sameNum++] = p;//When the record pheromone takes the maximum value, the corresponding city number and quantity
-        for(p = 0;p < _dim;p++)
-          if(!Passed[p])
-            bugTry[bugNum++] = p;
-        if( (double)rand() /32765 < bugP)
-          ant = samePhe[ rand() % sameNum ] ;//Select a side from it with a random number
-        else
-          ant = bugTry [ rand() % bugNum ] ;//In case of error, randomly select a side
+
+      //Each ant chooses n-1 times to complete the tour
+      for(j = 1;j < _dim;j++){
         Passed[ant] = true;
-        Path(i,j) = ant;
+        // Calculate the probability to go to the next city.
+        std::vector<double> probability;
+        for(p = 0;p < _dim;p++)
+          if(!Passed[p])
+            probability.push_back(pow(Phe(j, p), alpha) * pow(1/_adj_matrix(i,j), beta));
+          else
+            probability.push_back(0.0);
+
+        //for (double n: probability)
+          //std::cout << n << ' ';
+        //std::cout << std::endl;
+        // Construct a generator with such probability;
+        std::discrete_distribution<int> next_die (probability.begin(), probability.end());
+        // Choose next city to visit;
+        int next = next_die(generator);
+        Passed[next] = true;
+        path(j) = next;
+        LK += _adj_matrix(ant, next);
+        deltaPheSingle(ant, next) = Q;
+        ant = next;
+      }
+
+      LK += _adj_matrix(ant, start);
+      deltaPheSingle(ant, start) = Q;
+      deltaPhe += deltaPheSingle / LK;
+
+      if (LK < min_L) {
+        min_L = LK;
+        min_path = path;
       }
     }
-    //After completing the operation of each ant, perform the operation of adding pheromone,
-    // using Ant-Circle System
-    for(i = 0; i < m;i++){
-      LK  = 0 ;
-      for(j = 0; j < _dim-1;j++)
-        LK += _adj_matrix(Path(i,j),Path(i,j+1));//Calculate the total distance of ants in a loop
-      LK += _adj_matrix(Path(i,j),Path(i,0));
-      for(j = 0; j < _dim-1;j++)
-        Phe(Path(i,j),Path(i,j+1)) += Q/LK ;
-      Phe(Path(i,j),Path(i,0)) += Q/LK ;
-    }
+
+    tour(k) = min_L;
+    if (k == K - 1) {
+      for (i = 0; i < _dim; ++i)
+        if (min_path(i) == 0)
+          break;
+
+      for (j = 0; j < _dim; ++j)
+        _path.push_back(min_path((i + j) % _dim));
+
+    } else
+      Phe = Phe * rho + deltaPhe;//After each cycle, the pheromone disappears
   }
 
-
-  double curr = 1e32; //Although the operation has been completed, we have to intuitively find the
-  // shortest path from all existing paths.
-  for(i = 0;i < m;i++){
-    LK = 0;
-    for(j = 0;j < _dim-1;j++)
-      LK += _adj_matrix(Path(i,j),Path(i,j+1));//Calculate the total distance of ants in a loop
-    LK += _adj_matrix(Path(i,j),Path(i,0));//Back to the initial point
-    if(LK < curr){
-      curr = LK;
-      start = i;
-    }
-  }
-  for(i = 0;i < _dim; i++)
-    _path.push_back(Path(start, i));
-
+  //for (i = 0; i < K; ++i)
+    //std::cout << tour(i) << ' ';
+  //std::cout << std::endl;
   _caculated = true;
   return 0;
 }
@@ -190,4 +195,13 @@ AntColonyBase::printAdj(std::ostream &os) {
       os << _adj_matrix(i,j) << ' ';
     os << std::endl;
   }
+}
+
+double
+AntColonyBase::total_len() {
+  double result = 0.0;
+  for (unsigned i = 0; i < _path.size() - 1; ++i)
+    result += _adj_matrix(_path[i], _path[i + 1]);
+  result += _adj_matrix(_path[_path.size() - 1], _path[0]);
+  return result;
 }
