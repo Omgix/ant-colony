@@ -12,8 +12,10 @@
 class AntColonyBase
 {
  public:
-  explicit AntColonyBase(const char *filename);
-  explicit AntColonyBase(const std::string &filename);
+  explicit AntColonyBase(const char *filename, double alpha = 15, double beta = 20,
+      double rho = 0.1, double colony_eff = 1.0, unsigned maxiter = 500);
+  explicit AntColonyBase(const std::string &filename, double alpha = 15, double beta = 20,
+                         double rho = 0.1, double colony_eff = 1.0, unsigned maxiter = 500);
   AntColonyBase(const AntColonyBase&) = delete;
   AntColonyBase &operator=(const AntColonyBase&) = delete;
   int calcTSP();
@@ -31,6 +33,12 @@ class AntColonyBase
     double x;
     double y;
   };
+  double _alpha;                 // Regulate the influence of the intensity of pheromone
+  double _beta;                   // Regulate the influence of visibility of city
+  double _rho;                     //Rate at which each pheromone disappears
+  double _colony_eff;
+  unsigned _maxiter;
+
   int _dim;
   Eigen::MatrixXd _adj_matrix;
   bool _caculated;

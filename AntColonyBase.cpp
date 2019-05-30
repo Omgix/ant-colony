@@ -8,7 +8,10 @@
 #include <string>
 #include <iostream>
 
-AntColonyBase::AntColonyBase(const char *filename) {
+AntColonyBase::AntColonyBase(const char *filename, double alpha, double beta,
+                             double rho, double colony_eff, unsigned maxiter):
+                             _alpha(alpha), _beta(beta), _rho(rho), _colony_eff(colony_eff), _maxiter(maxiter)
+{
   std::ifstream input (filename);
   NODE_COORD_TYPE type = NONE;
   _caculated = false;
@@ -72,7 +75,9 @@ AntColonyBase::AntColonyBase(const char *filename) {
   }
 }
 
-AntColonyBase::AntColonyBase(const std::string &filename) : AntColonyBase(filename.c_str()) {}
+AntColonyBase::AntColonyBase(const std::string &filename, double alpha, double beta,
+                             double rho, double colony_eff, unsigned maxiter) :
+                             AntColonyBase(filename.c_str(), alpha, beta, rho, colony_eff, maxiter) {}
 
 int
 AntColonyBase::calcTSP()
@@ -94,17 +99,13 @@ AntColonyBase::recalcTSP()
   // Note: change member _caculated to true at last
   const int MMax = 9999;              //max number of ants
   const int NMax = 500;               //max citys
-  int m = 1 * _dim;                       //number of ants
+  int m = _colony_eff * _dim;                       //number of ants
   const double Q = 999;              //flexible
-  const int K = 9000;                 //ITER
   Eigen::MatrixXd Phe = Eigen::MatrixXd::Constant(_dim, _dim, 1);    // Pheromone
   int ant;                            //Ant's current location
   int i,j,k,p;                        //loop variables
-  double alpha = 15;                 // Regulate the influence of the intensity of pheromone
-  double beta = 20;                   // Regulate the influence of visibility of city
-  double rho = 1;                     //Rate at which each pheromone disappears
   bool Passed[NMax];                  //Used to determine if the city has passed, can it be selected
-  Eigen::VectorXd tour (K);
+  Eigen::VectorXd tour (_maxiter);
 
   long seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator (seed);
@@ -112,7 +113,7 @@ AntColonyBase::recalcTSP()
   double min_L = 1e32;
   Eigen::VectorXi min_path (_dim);
 
-  for(k = 0;k < K;k++){
+  for(k = 0;k < _maxiter;k++){
 
     Eigen::MatrixXd deltaPhe = Eigen::MatrixXd::Zero(_dim, _dim);
 
@@ -135,7 +136,7 @@ AntColonyBase::recalcTSP()
         std::vector<double> probability;
         for(p = 0;p < _dim;p++)
           if(!Passed[p])
-            probability.push_back(pow(Phe(j, p), alpha) * pow(1/_adj_matrix(i,j), beta));
+            probability.push_back(pow(Phe(j, p), _alpha) * pow(1/_adj_matrix(i,j), _beta));
           else
             probability.push_back(0.0);
 
@@ -164,7 +165,7 @@ AntColonyBase::recalcTSP()
     }
 
     tour(k) = min_L;
-    if (k == K - 1) {
+    if (k == _maxiter - 1) {
       for (i = 0; i < _dim; ++i)
         if (min_path(i) == 0)
           break;
@@ -173,7 +174,7 @@ AntColonyBase::recalcTSP()
         _path.push_back(min_path((i + j) % _dim));
 
     } else
-      Phe = Phe * rho + deltaPhe;//After each cycle, the pheromone disappears
+      Phe = Phe * _rho + deltaPhe;//After each cycle, the pheromone disappears
   }
 
   //for (i = 0; i < K; ++i)
