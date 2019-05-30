@@ -35,11 +35,11 @@ AntColonyBase::AntColonyBase(const char *filename) {
       break;
     } else {
 
-      if (line.find("_adj_matrixIMENSION") != std::string::npos) {
+      if (line.find("DIMENSION") != std::string::npos) {
         size_t pos = line.find(":");
         std::istringstream str_n_nodes (line.substr(pos + 1));
         str_n_nodes >> _dim;
-      } else if (line.find("NO_adj_matrixE_COOR_adj_matrix_SECTION") != std::string::npos) {
+      } else if (line.find("NODE_COORD_SECTION") != std::string::npos) {
         node_coord_sec = true;
       }
 
@@ -76,31 +76,30 @@ AntColonyBase::recalcTSP()
   // -1 Fail, max iterations reach.
 
   // Note: change member _caculated to true at last
-  const int MMax = 9999;      //max number of ants
-  const int NMax = 500;       //max citys
-  int m;                    //number of ants
-  const double Q = 999 ;      //flexible
-  const int K = 1000;         //ITER
-  Eigen::MatrixXd Phe(_dim, _dim); // Pheromone
-  double LK;                     //total length
-  Eigen::MatrixXi Path(MMax, _dim);//Record the path of the ant to prevent duplicate paths. Recorded is the point
-  int ant;                    //Ant's current location
-  int i,j,k,p;                //loop variables
-  double _adj_matrixis = 0.1;           //Rate at which each pheromone disappears
-  int sameNum,samePhe[NMax];  //Every time I go to find the side with the most pheromone, as in the initial situation,
-  // when the amount of pheromone is the same,
-  int bugNum,bugTry[NMax];    //Selection made in the event of an error
-  double bugP = 0.90;         //Selection made in the event of an error
-  int start = 0;                  //Starting point, the city number is from 0 - n-1.
-  double Max;                 //Used to select the most pheromone side
-  bool Passed[NMax];          //Used to determine if the city has passed, can it be selected
+  const int MMax = 9999;              //max number of ants
+  const int NMax = 500;               //max citys
+  int m = _dim;                       //number of ants
+  const double Q = 999 ;              //flexible
+  const int K = 1000;                 //ITER
+  Eigen::MatrixXd Phe(_dim, _dim);    // Pheromone
+  double LK;                          //total length
+  Eigen::MatrixXi Path(m, _dim);   //Record the path of the ant to prevent duplicate paths. Recorded is the point
+  int ant;                            //Ant's current location
+  int i,j,k,p;                        //loop variables
+  double _adj_matrixis = 0.1;         //Rate at which each pheromone disappears
+  int sameNum,samePhe[NMax];          //Every time I go to find the side with the most pheromone, as in the initial situation,
+                                      // when the amount of pheromone is the same,
+  int bugNum,bugTry[NMax];            //Selection made in the event of an error
+  double bugP = 0.90;                 //Selection made in the event of an error
+  int start = 0;                      //Starting point, the city number is from 0 - n-1.
+  double Max;                         //Used to select the most pheromone side
+  bool Passed[NMax];                  //Used to determine if the city has passed, can it be selected
 
   for(i = 0;i < _dim;i++)
     for(j = 0; j < _dim;j++)
-      Phe(i,j) = 1;//Initialize the pheromone concentration on each side
+      Phe(i,j) = 1; //Initialize the pheromone concentration on each side
   for(i = 0;i< m;i++)
-    Path(i,0) = start;//The starting point of each ant is fixed
-  m = 999;
+    Path(i,0) = start;  //The starting point of each ant is fixed
   for(k = 0;k < K;k++){
     for(i = 0;i < _dim;i++)
       for(j = 0; j < _dim;j++)
@@ -145,21 +144,24 @@ AntColonyBase::recalcTSP()
       Phe(Path(i,j),Path(i,0)) += Q/LK ;
     }
   }
-  p = 0xfffff; //Although the operation has been completed, we have to intuitively find the
+
+
+  double curr = 1e32; //Although the operation has been completed, we have to intuitively find the
   // shortest path from all existing paths.
   for(i = 0;i < m;i++){
     LK = 0;
     for(j = 0;j < _dim-1;j++)
       LK += _adj_matrix(Path(i,j),Path(i,j+1));//Calculate the total distance of ants in a loop
     LK += _adj_matrix(Path(i,j),Path(i,0));//Back to the initial point
-    if(LK < p){
-      p = LK;
+    if(LK < curr){
+      curr = LK;
       start = i;
     }
   }
   for(i = 0;i < _dim; i++)
-    _path[i] = Path(start, i);
+    _path.push_back(Path(start, i));
 
+  _caculated = true;
   return 0;
 }
 

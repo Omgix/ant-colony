@@ -1,0 +1,13 @@
+#include "AntColonyBase.h"
+
+#include <iostream>
+
+int main(int argc, char **argv) {
+  AntColonyBase data(argv[1]);
+  data.calcTSP();
+  std::deque<int> &path = data.get_path();
+
+  for (int node: path)
+    std::cout << node + 1 << ' ';
+  std::cout << std::endl;
+}

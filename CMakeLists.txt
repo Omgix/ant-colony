@@ -13,3 +13,6 @@ setup_eigen()
 
 add_library(AntColonyBase AntColonyBase.cpp)
 target_link_libraries(AntColonyBase Eigen3::Eigen)
+
+include(CTest)
+add_subdirectory(test)
