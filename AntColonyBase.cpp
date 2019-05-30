@@ -33,6 +33,9 @@ AntColonyBase::AntColonyBase(const char *filename, double alpha, double beta,
     }
   }
 
+  _mintour_each = std::deque<double>(_dim, 0);
+  _mintour_global = std::deque<double>(_dim, 0);
+
   if (type == COORD) {
 
     std::deque<Point> points;
@@ -97,15 +100,13 @@ AntColonyBase::recalcTSP()
   // -1 Fail, max iterations reach.
 
   // Note: change member _caculated to true at last
-  const int MMax = 9999;              //max number of ants
   const int NMax = 500;               //max citys
-  int m = _colony_eff * _dim;                       //number of ants
+  int m = ceil(_colony_eff * _dim);                       //number of ants
   const double Q = 999;              //flexible
   Eigen::MatrixXd Phe = Eigen::MatrixXd::Constant(_dim, _dim, 1);    // Pheromone
   int ant;                            //Ant's current location
   int i,j,k,p;                        //loop variables
   bool Passed[NMax];                  //Used to determine if the city has passed, can it be selected
-  Eigen::VectorXd tour (_maxiter);
 
   long seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator (seed);
@@ -116,6 +117,7 @@ AntColonyBase::recalcTSP()
   for(k = 0;k < _maxiter;k++){
 
     Eigen::MatrixXd deltaPhe = Eigen::MatrixXd::Zero(_dim, _dim);
+    double min_L_local = 1e32;
 
     //For each ant, perform a loop
     for(i = 0;i < m;i++){
@@ -144,7 +146,8 @@ AntColonyBase::recalcTSP()
           //std::cout << n << ' ';
         //std::cout << std::endl;
         // Construct a generator with such probability;
-        std::discrete_distribution<int> next_die (probability.begin(), probability.end());
+        std::discrete_distribution<int>
+            next_die (probability.begin(), probability.end());
         // Choose next city to visit;
         int next = next_die(generator);
         Passed[next] = true;
@@ -162,9 +165,12 @@ AntColonyBase::recalcTSP()
         min_L = LK;
         min_path = path;
       }
+      if (LK < min_L_local)
+        min_L_local = LK;
     }
 
-    tour(k) = min_L;
+    _mintour_global[k] = min_L;
+    _mintour_each[k] = min_L_local;
     if (k == _maxiter - 1) {
       for (i = 0; i < _dim; ++i)
         if (min_path(i) == 0)
@@ -177,9 +183,6 @@ AntColonyBase::recalcTSP()
       Phe = Phe * _rho + deltaPhe;//After each cycle, the pheromone disappears
   }
 
-  //for (i = 0; i < K; ++i)
-    //std::cout << tour(i) << ' ';
-  //std::cout << std::endl;
   _caculated = true;
   return 0;
 }
@@ -187,6 +190,16 @@ AntColonyBase::recalcTSP()
 std::deque<int> &
 AntColonyBase::get_path() {
   return _path;
+}
+
+std::deque<double> &
+AntColonyBase::get_mintour_each() {
+  return _mintour_each;
+}
+
+std::deque<double> &
+AntColonyBase::get_mintour_global() {
+  return _mintour_global;
 }
 
 void

@@ -21,6 +21,8 @@ class AntColonyBase
   int calcTSP();
   int recalcTSP();
   std::deque<int> &get_path();
+  std::deque<double> &get_mintour_each();
+  std::deque<double> &get_mintour_global();
   void printAdj(std::ostream &os);
   double total_len();
  private:
@@ -43,6 +45,8 @@ class AntColonyBase
   Eigen::MatrixXd _adj_matrix;
   bool _caculated;
   std::deque<int> _path;
+  std::deque<double> _mintour_each;
+  std::deque<double> _mintour_global;
   std::string error_msg;
 };
 
