@@ -19,7 +19,13 @@ class AntColonyBase
   int calcTSP();
   int recalcTSP();
   std::deque<int> &get_path();
+  void printAdj(std::ostream &os);
  private:
+  enum NODE_COORD_TYPE {
+    NONE,
+    COORD,
+    NO_COORDS,
+  };
   struct Point {
     double x;
     double y;
@@ -28,6 +34,7 @@ class AntColonyBase
   Eigen::MatrixXd _adj_matrix;
   bool _caculated;
   std::deque<int> _path;
+  std::string error_msg;
 };
 
 #endif //ANT_COLONY_ANTCOLONYBASE_H

@@ -7,53 +7,66 @@
 
 AntColonyBase::AntColonyBase(const char *filename) {
   std::ifstream input (filename);
-  bool node_coord_sec = false;
-  std::deque<Point> points;
+  NODE_COORD_TYPE type = NONE;
   _caculated = false;
+  std::string line;
 
   // Read file to get dimension and points coord.
-  for (std::string line; getline(input, line);) {
-    if (node_coord_sec) {
+  while (getline(input, line)) {
 
-      std::istringstream coord (line);
-      Point point;
+    if (line.find("DIMENSION") != std::string::npos) {
+      size_t pos = line.find(":");
+      std::istringstream str_n_nodes (line.substr(pos + 1));
+      str_n_nodes >> _dim;
+    } else if (line.find("NODE_COORD_SECTION") != std::string::npos) {
+      type = COORD;
+      break;
+    } else if (line.find("EDGE_WEIGHT_SECTION") != std::string::npos) {
+      type = NO_COORDS;
+      break;
+    }
+  }
 
+  if (type == COORD) {
+
+    std::deque<Point> points;
+    Point point;
+
+    for (int i = 0; i < _dim; ++i) {
+      getline(input, line);
+      std::istringstream coord(line);
       coord >> point.x;
       coord >> point.x;
       coord >> point.y;
       points.push_back(point);
-
-      for (int i = 1; i < _dim; ++i) {
-        getline(input, line);
-        std::istringstream coord (line);
-        coord >> point.x;
-        coord >> point.x;
-        coord >> point.y;
-        points.push_back(point);
-      }
-
-      break;
-    } else {
-
-      if (line.find("DIMENSION") != std::string::npos) {
-        size_t pos = line.find(":");
-        std::istringstream str_n_nodes (line.substr(pos + 1));
-        str_n_nodes >> _dim;
-      } else if (line.find("NODE_COORD_SECTION") != std::string::npos) {
-        node_coord_sec = true;
-      }
-
     }
+
+    _adj_matrix = Eigen::MatrixXd(_dim, _dim);
+
+    for (int i = 0; i < _dim; ++i)
+      for (int j = 0; j <= i; ++j) {
+        double d_x = points[i].x - points[j].x;
+        double d_y = points[i].y - points[j].y;
+        _adj_matrix(j, i) = _adj_matrix(i, j) = sqrt(d_x * d_x + d_y * d_y);
+      }
+
+  } else if (type == NO_COORDS) {
+
+    _adj_matrix = Eigen::MatrixXd(_dim, _dim);
+
+    for (int i = 0; i < _dim; ++i) {
+      getline(input, line);
+      std::istringstream coord(line);
+      double weight;
+      for (int j = 0; j < _dim; ++j) {
+        coord >> weight;
+        _adj_matrix(i,j) = weight;
+      }
+    }
+
+  } else {
+    error_msg = "Unknown NODE_COORD_TYPE";
   }
-
-  _adj_matrix = Eigen::MatrixXd(_dim, _dim);
-  for (int i = 0; i < _dim; ++i)
-    for (int j = 0; j <= i; ++j) {
-      double d_x = points[i].x - points[j].x;
-      double d_y = points[i].y - points[j].y;
-      _adj_matrix(j,i) = _adj_matrix(i,j) = sqrt(d_x*d_x + d_y*d_y);
-    }
-
 }
 
 AntColonyBase::AntColonyBase(const std::string &filename) : AntColonyBase(filename.c_str()) {}
@@ -168,4 +181,13 @@ AntColonyBase::recalcTSP()
 std::deque<int> &
 AntColonyBase::get_path() {
   return _path;
+}
+
+void
+AntColonyBase::printAdj(std::ostream &os) {
+  for (int i = 0; i < _dim; ++i) {
+    for (int j = 0; j < _dim; ++j)
+      os << _adj_matrix(i,j) << ' ';
+    os << std::endl;
+  }
 }
