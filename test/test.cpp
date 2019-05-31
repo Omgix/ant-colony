@@ -12,5 +12,4 @@ int main(int argc, char **argv) {
   for (int node: path)
     std::cout << node + 1 << ' ';
   std::cout << std::endl;
-  std::cout << data.total_len() << std::endl;
 }
