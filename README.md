@@ -9,10 +9,9 @@ This is the main source code repository for [Ant Colony Optimization Algorithms]
 1. Make sure you have installed the dependencies:
 
    * `g++` 4.7 or later or `clang++` 3.x or later
-   * `python` 3.x (but not 2.x)
    * GNU `make` 3.81 or later
    * `cmake` 3.4.3 or later
-   * `curl`
+   * `OpenMP`
    * `git`
 
 2. Clone the [source] with `git`:
