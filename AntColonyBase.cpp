@@ -111,13 +111,13 @@ AntColonyBase::recalcTSP()
   long seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator (seed);
   std::uniform_int_distribution<int> start_die (0, _dim - 1);
-  double min_L = 1e32;
-  Eigen::VectorXi min_path (_dim);
+  double min_L = 1e32;                // Minimal tour in all iterations
+  Eigen::VectorXi min_path (_dim);    // Path of minimal tour in all iterations
 
   for(k = 0;k < _maxiter;k++){
 
-    Eigen::MatrixXd deltaPhe = Eigen::MatrixXd::Zero(_dim, _dim);
-    double min_L_local = 1e32;
+    Eigen::MatrixXd deltaPhe = Eigen::MatrixXd::Zero(_dim, _dim); // Pheromone that will be added in the next iteration
+    double min_L_local = 1e32; // Minimal tour in the current iterations
 
     //For each ant, perform a loop
 
@@ -125,10 +125,11 @@ AntColonyBase::recalcTSP()
     for(i = 0;i < m;i++){
 
       bool Passed[NMax];  //Used to determine if the city has passed, can it be selected
-      Eigen::MatrixXd deltaPheSingle = Eigen::MatrixXd::Zero(_dim, _dim);
-      double LK = 0;
-      Eigen::VectorXi path (_dim);
-      int start = start_die(generator);
+      Eigen::MatrixXd deltaPheSingle = Eigen::MatrixXd::Zero(_dim, _dim); // Part of pheromone that will be added in the next
+                                                                          // iteration
+      double LK = 0;                   // Total length of tour of the current ant
+      Eigen::VectorXi path (_dim);     // Path of tour of the current ant
+      int start = start_die(generator); // Choose the start point randomly.
       ant = start;
       path(0) = start;
       for(j = 0;j < _dim;j++)
@@ -145,10 +146,7 @@ AntColonyBase::recalcTSP()
           else
             probability.push_back(0.0);
 
-        //for (double n: probability)
-          //std::cout << n << ' ';
-        //std::cout << std::endl;
-        // Construct a generator with such probability;
+        // Construct a generator with the given probability;
         std::discrete_distribution<int>
             next_die (probability.begin(), probability.end());
         // Choose next city to visit;
@@ -163,6 +161,7 @@ AntColonyBase::recalcTSP()
       LK += _adj_matrix(ant, start);
       deltaPheSingle(ant, start) = Q;
 
+      // Only one thread can update the information of the minimal tour.
       #pragma omp critical
       {
         deltaPhe += deltaPheSingle / LK;
@@ -186,7 +185,7 @@ AntColonyBase::recalcTSP()
         _path.push_back(min_path((i + j) % _dim));
 
     } else
-      Phe = Phe * _rho + deltaPhe;//After each cycle, the pheromone disappears
+      Phe = Phe * _rho + deltaPhe;//After each cycle, update the pheromone.
   }
 
   _caculated = true;

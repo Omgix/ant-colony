@@ -19,13 +19,13 @@ class AntColonyBase
                          double rho = 0.1, double colony_eff = 1.0, unsigned maxiter = 500);
   AntColonyBase(const AntColonyBase&) = delete;
   AntColonyBase &operator=(const AntColonyBase&) = delete;
-  int calcTSP();
-  int recalcTSP();
-  std::deque<int> &get_path();
-  std::deque<double> &get_mintour_each();
-  std::deque<double> &get_mintour_global();
-  void printAdj(std::ostream &os);
-  double total_len();
+  int calcTSP();      // If the optimal tour not calculated, calculate and store the result that can be gotten by getpath()
+  int recalcTSP();    // Similar to calcTSP(), but calculate anyway;
+  std::deque<int> &get_path(); // Get the result (after calculating)
+  std::deque<double> &get_mintour_each(); // Get the length of minimal tour in each iterations
+  std::deque<double> &get_mintour_global(); // Get the length of minimal tour until each iteration.
+  void printAdj(std::ostream &os);  // Print adjacent matrix in OS
+  double total_len();               // Get the length of the result path.
  private:
   enum NODE_COORD_TYPE {
     NONE,
@@ -39,8 +39,8 @@ class AntColonyBase
   double _alpha;                 // Regulate the influence of the intensity of pheromone
   double _beta;                   // Regulate the influence of visibility of city
   double _rho;                     //Rate at which each pheromone disappears
-  double _colony_eff;
-  unsigned _maxiter;
+  double _colony_eff;            // Rate of ant number to dimentions
+  unsigned _maxiter;             // Number of iterations
 
   int _dim;
   Eigen::MatrixXd _adj_matrix;
