@@ -1,5 +1,6 @@
 #include "AntColonyBase.h"
 
+#include <atomic>
 #include <cmath>
 #include <chrono>
 #include <fstream>
@@ -119,6 +120,7 @@ AntColonyBase::recalcTSP()
     double min_L_local = 1e32;
 
     //For each ant, perform a loop
+
 #pragma omp for private(i)
     for(i = 0;i < m;i++){
 
@@ -139,7 +141,7 @@ AntColonyBase::recalcTSP()
         std::vector<double> probability;
         for(p = 0;p < _dim;p++)
           if(!Passed[p])
-            probability.push_back(pow(Phe(j, p), _alpha) * pow(1/_adj_matrix(i,j), _beta));
+            probability.push_back(pow(Phe(ant, p), _alpha) * pow(1/_adj_matrix(ant, p), _beta));
           else
             probability.push_back(0.0);
 
