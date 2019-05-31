@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 
 #include <fstream>
+#include <omp.h>
 #include <string>
 #include <deque>
 

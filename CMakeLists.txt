@@ -14,7 +14,13 @@ include(CTest)
 add_subdirectory( test )
 
 add_library(AntColonyBase AntColonyBase.cpp)
-target_link_libraries(AntColonyBase Eigen3::Eigen)
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(AntColonyBase PUBLIC OpenMP::OpenMP_CXX Eigen3::Eigen)
+else()
+    target_link_libraries(AntColonyBase Eigen3::Eigen)
+endif()
 
 SET( PACKAGE_VERSION "0.1.1" )
 FIND_PACKAGE( pybind11 REQUIRED )

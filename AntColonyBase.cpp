@@ -33,8 +33,8 @@ AntColonyBase::AntColonyBase(const char *filename, double alpha, double beta,
     }
   }
 
-  _mintour_each = std::deque<double>(_dim, 0);
-  _mintour_global = std::deque<double>(_dim, 0);
+  _mintour_each = std::deque<double>(_maxiter, 0);
+  _mintour_global = std::deque<double>(_maxiter, 0);
 
   if (type == COORD) {
 
@@ -101,12 +101,11 @@ AntColonyBase::recalcTSP()
 
   // Note: change member _caculated to true at last
   const int NMax = 500;               //max citys
-  int m = ceil(_colony_eff * _dim);                       //number of ants
+  const int m = ceil(_colony_eff * _dim);                       //number of ants
   const double Q = 999;              //flexible
   Eigen::MatrixXd Phe = Eigen::MatrixXd::Constant(_dim, _dim, 1);    // Pheromone
   int ant;                            //Ant's current location
   int i,j,k,p;                        //loop variables
-  bool Passed[NMax];                  //Used to determine if the city has passed, can it be selected
 
   long seed = std::chrono::system_clock::now().time_since_epoch().count();
   std::default_random_engine generator (seed);
@@ -120,8 +119,10 @@ AntColonyBase::recalcTSP()
     double min_L_local = 1e32;
 
     //For each ant, perform a loop
+#pragma omp for private(i)
     for(i = 0;i < m;i++){
 
+      bool Passed[NMax];  //Used to determine if the city has passed, can it be selected
       Eigen::MatrixXd deltaPheSingle = Eigen::MatrixXd::Zero(_dim, _dim);
       double LK = 0;
       Eigen::VectorXi path (_dim);
@@ -159,14 +160,17 @@ AntColonyBase::recalcTSP()
 
       LK += _adj_matrix(ant, start);
       deltaPheSingle(ant, start) = Q;
-      deltaPhe += deltaPheSingle / LK;
 
-      if (LK < min_L) {
-        min_L = LK;
-        min_path = path;
+      #pragma omp critical
+      {
+        deltaPhe += deltaPheSingle / LK;
+        if (LK < min_L) {
+          min_L = LK;
+          min_path = path;
+        }
+        if (LK < min_L_local)
+          min_L_local = LK;
       }
-      if (LK < min_L_local)
-        min_L_local = LK;
     }
 
     _mintour_global[k] = min_L;
